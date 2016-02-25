@@ -1,3 +1,4 @@
+// lockit-signup/index.js
 'use strict';
 
 var path = require('path');
@@ -119,56 +120,43 @@ Signup.prototype.postSignup = function(req, res, next) {
     });
   }
 
-    // check for duplicate email - send reminder when duplicate email is found
-    adapter.find('email', email, function(findErr, foundUser) {
-      if (findErr) {return next(findErr); }
-
-      // custom or built-in view
-      var successView = config.signup.views.signedUp || join('post-signup');
-
-      if (foundUser) {
-        // send already registered email
-        var mail = new Mail(config);
-        return mail.taken(foundUser.name, foundUser.email, function(takenErr) {
-          if (takenErr) {return next(takenErr); }
-
-          // send only JSON when REST is active
-          if (config.rest) {return res.send(204); }
-
-          res.render(successView, {
-            title: 'Sign up - Email sent',
-            basedir: req.app.get('views')
-          });
+  // check for duplicate email - send reminder when duplicate email is found
+  adapter.find('email', email, function(findErr, foundUser) {
+    if (findErr) {return next(findErr); }
+    // custom or built-in view
+    var successView = config.signup.views.signedUp || join('post-signup');
+    if (foundUser) {
+      // send already registered email
+      var mail = new Mail(config);
+      return mail.taken(foundUser.name, foundUser.email, function(takenErr) {
+        if (takenErr) {return next(takenErr); }
+        // send only JSON when REST is active
+        if (config.rest) {return res.send(204); }
+        res.render(successView, {
+          title: 'Sign up - Email sent',
+          basedir: req.app.get('views')
         });
-
-      }
-
-      // looks like everything is fine
-
-      // save new user to db
-      adapter.save(req, function(saveErr, savedUser) {
-        if (saveErr) {return next(saveErr); }
-
-        // send email with link for address verification
-        var m = new Mail(config);
-        m.signup(savedUser.name, savedUser.email, savedUser.signupToken, function(signupErr) {
-          if (signupErr) {return next(signupErr); }
-
-          // emit event
-          that.emit('signup::post', savedUser);
-
-          // send only JSON when REST is active
-          if (config.rest) {return res.send(204); }
-
-          res.render(successView, {
-            title: 'Sign up - Email sent',
-            basedir: req.app.get('views')
-          });
-        });
-
       });
-
+    }
+    // looks like everything is fine
+    // save new user to db
+    adapter.save(req, function(saveErr, savedUser) {
+      if (saveErr) {return next(saveErr); }
+      // send email with link for address verification
+      var m = new Mail(config);
+      m.signup(savedUser.name, savedUser.email, savedUser.signupToken, function(signupErr) {
+        if (signupErr) {return next(signupErr); }
+        // emit event
+        that.emit('signup::post', savedUser);
+        // send only JSON when REST is active
+        if (config.rest) {return res.send(204); }
+        res.render(successView, {
+          title: 'Sign up - Email sent',
+          basedir: req.app.get('views')
+        });
+      });
     });
+  });
 
 };
 
