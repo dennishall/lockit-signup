@@ -84,7 +84,8 @@ Signup.prototype.postSignup = function(req, res, next) {
   var adapter = this.adapter;
   var that = this;
 
-  var name = req.body.name;
+  var firstName = req.body.firstName;
+  var lastName = req.body.lastName;
   var email = req.body.email;
   var password = req.body.password;
 
@@ -93,14 +94,8 @@ Signup.prototype.postSignup = function(req, res, next) {
   var EMAIL_REGEXP = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}$/;
 
   // check for valid inputs
-  if (!name || !email || !password) {
+  if (!firstName || !lastName || !email || !password) {
     error = 'All fields are required';
-  } else if (name !== encodeURIComponent(name)) {
-    error = 'Username may not contain any non-url-safe characters';
-  } else if (name !== name.toLowerCase()) {
-    error = 'Username must be lowercase';
-  } else if (!name.charAt(0).match(/[a-z]/)) {
-    error = 'Username has to start with a lowercase letter (a-z)';
   } else if (!email.match(EMAIL_REGEXP)) {
     error = 'Email is invalid';
   }
@@ -118,30 +113,11 @@ Signup.prototype.postSignup = function(req, res, next) {
       title: 'Sign up',
       error: error,
       basedir: req.app.get('views'),
-      name: name,
+      firstName: firstName,
+      lastName: lastName,
       email: email
     });
   }
-
-  // check for duplicate name
-  adapter.find('name', name, function(err, user) {
-    if (err) {return next(err); }
-
-    if (user) {
-      error = 'Username already taken';
-      // send only JSON when REST is active
-      if (config.rest) {return res.json(403, {error: error}); }
-
-      // render template with error message
-      res.status(403);
-      return res.render(errorView, {
-        title: 'Sign up',
-        error: error,
-        basedir: req.app.get('views'),
-        name: name,
-        email: email
-      });
-    }
 
     // check for duplicate email - send reminder when duplicate email is found
     adapter.find('email', email, function(findErr, foundUser) {
@@ -170,7 +146,7 @@ Signup.prototype.postSignup = function(req, res, next) {
       // looks like everything is fine
 
       // save new user to db
-      adapter.save(name, email, password, function(saveErr, savedUser) {
+      adapter.save(req, function(saveErr, savedUser) {
         if (saveErr) {return next(saveErr); }
 
         // send email with link for address verification
@@ -194,7 +170,6 @@ Signup.prototype.postSignup = function(req, res, next) {
 
     });
 
-  });
 };
 
 
